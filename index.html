@@ -266,6 +266,9 @@ footer .slogan{color:#E3C766;font-family:var(--amiri);font-size:1.25rem;margin-t
 .edx details{border:1px solid #E6DCC2;border-radius:6px;margin-top:10px;background:#FFFDF8}
 .edx summary{cursor:pointer;padding:12px;font-family:var(--amiri);font-weight:700;color:var(--navy);font-size:1.15rem}
 .edx .dbody{padding:0 10px 12px}
+.adm-d{border:1px solid #E6DCC2;border-radius:6px;margin-top:10px;background:#FFFDF8}
+.adm-d summary{cursor:pointer;padding:12px;font-family:var(--amiri);font-weight:700;color:var(--navy);font-size:1.15rem}
+.adm-d .dbody{padding:0 10px 12px}
 .edx h4{font-family:var(--kufi);font-size:.78rem;font-weight:600;color:#9A7B1E;margin:14px 0 4px;padding-bottom:4px;border-bottom:1px solid #EFE6CF}
 .edx label{display:block;font-size:.82rem;font-weight:700;color:var(--navy);margin-top:8px}
 .edx textarea,.ed .wide{width:100%;padding:8px 10px;border:1px solid #DCD2B8;border-radius:6px;background:var(--cream);color:var(--ink);font:inherit}
@@ -442,8 +445,10 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-lang]');if
 applyLang();
 
 // lesson ids per subject (stable keys for progress)
+// philosophy lessons: id = philo-{concept}-{key}; key = 3rd item of the lesson if present, else its position (old content keeps the same ids)
+const pk=(a,i)=>(Array.isArray(a)&&a[2]!=null&&a[2]!=='')?String(a[2]):String(i+1);
 function ids(k){const s=SUBJECTS[k];
-  if(k==='philo')return s.modules.flatMap(m=>m.concepts.flatMap(c=>c[2].map((_,i)=>`philo-${c[0]}-${i+1}`)));
+  if(k==='philo')return s.modules.flatMap(m=>m.concepts.flatMap(c=>c[2].map((a,i)=>`philo-${c[0]}-${pk(a,i)}`)));
   if(k==='hist')return s.sessions.flatMap(x=>[...x.eu,...x.is]).map(i=>'hist-'+i[0]);
   if(k==='geo')return s.sessions.flatMap(x=>x.items).map(i=>'geo-'+i[0]);
   return s.groups.flatMap(g=>g.items).map(i=>k+'-'+i[0]);}
@@ -476,7 +481,7 @@ function home(){
 }
 function philo(){const s=SUBJECTS.philo;return back()+`<article class="v-philo"><div class="in">
   <header><img src="${SEAL}" alt=""><div><h1>${t('t_philo')}</h1><span class="band">${t('meta')}</span></div></header>
-  ${s.modules.map(m=>`<section class="mod"><h2>${m.t}</h2>${m.concepts.map(([n,x,ax])=>`<div class="concept"><h3><span class="circ num">${n}</span>${t('concept')}${x}</h3>${ax.map((a,i)=>row(`philo-${n}-${i+1}`,`<span class="ax num">${i+1}</span>${Array.isArray(a)?a[0]:a}`,Array.isArray(a)?a[1]:S)).join('')}</div>`).join('')}</section>`).join('')}
+  ${s.modules.map(m=>`<section class="mod"><h2>${m.t}</h2>${m.concepts.map(([n,x,ax])=>`<div class="concept"><h3><span class="circ num">${n}</span>${t('concept')}${x}</h3>${ax.map((a,i)=>row(`philo-${n}-${pk(a,i)}`,`<span class="ax num">${i+1}</span>${Array.isArray(a)?a[0]:a}`,Array.isArray(a)?a[1]:S)).join('')}</div>`).join('')}</section>`).join('')}
   </div></article>`}
 function hist(){const s=SUBJECTS.hist;const it=(x)=>x.map(([n,x2,st])=>row('hist-'+n,`<span style="display:flex;gap:10px;align-items:flex-start"><span class="seal num">${n}</span><span>${x2}</span></span>`,st)).join('');
  return back()+`<article class="v-hist"><span class="corner c1">◆</span><span class="corner c2">◆</span><span class="corner c3">◆</span><span class="corner c4">◆</span><div class="in">
@@ -564,36 +569,34 @@ function admin(){
     <div class="mc-a">${sendBtns(m.u,s.code,m.name,s.phone)}<button type="button" class="ed" data-uid="${m.uid}">تعديل</button><button type="button" class="tg" data-uid="${m.uid}" data-st="${m.status}">${m.status==='active'?'وقّف':'فعّل'}</button><button type="button" class="mdl" data-uid="${m.uid}">مسح</button></div></div>`}).join('');
   const recs=adminRecs.length?adminRecs.map(r=>`<div class="rc"><div class="rc-h"><b dir="ltr">${esc(r.u||'')}</b><span>${esc(r.name||'')}</span><span>${L.ar['r_'+r.type]||''}</span><span class="num">${fmtDate(r.created)}</span><span class="rst ${r.status==='closed'?'closed':'open'}">${r.status==='closed'?'تمّت المعالجة':'مفتوح'}</span></div><p dir="auto">${esc(r.text)}</p><button type="button" class="rtg" data-id="${r.id}" data-st="${r.status}">${r.status==='closed'?'عاود فتحو':'تمّت المعالجة'}</button></div>`).join(''):'<p class="note">ما كاين حتى تبليغ.</p>';
   const nw=lastNew?`<div class="newm"><b>✓ تزاد العضو</b><div>اسم الدخول: <code dir="ltr">${esc(lastNew.u)}</code> · الرمز: <code dir="ltr">${esc(lastNew.code)}</code></div><div class="mc-a">${sendBtns(lastNew.u,lastNew.code,lastNew.name,lastNew.phone)}</div></div>`:'';
+  const adet=(g,t,body)=>`<details class="adm-d" data-g="${g}"${edOpen.has(g)?' open':''}><summary>${t}</summary><div class="dbody">${body}</div></details>`;
   return back()+`<section class="sheet adm"><div class="eyebrow">خاص بالمدير</div><h2>إدارة فضاء الأعضاء</h2>
    <p class="note num">${list.length} عضو · ${act} نشيط · ${list.length-act} موقوف · ${open} تبليغ مفتوح</p>
    <button type="button" class="btn edgo" data-go="att">الحضور · الحصص والرموز</button>
    <button type="button" class="btn edgo" data-go="tab">جدول الحضور والغياب</button>
     <button type="button" class="btn edgo" data-go="edit">تعديل الدروس والبرنامج</button>
-   <h3>1 · إضافة طالب جديد</h3><p class="note">اكتب المعلومات ديالو. اسم الدخول والرمز السري اختياريين: إيلا خليتيهم خاويين كيتصاوبو بوحدهم.</p>
-   <form id="newForm" class="nf">
+   ${nw}
+   ${adet('new','1 · إضافة طالب جديد','<p class="note">اكتب المعلومات ديالو. اسم الدخول والرمز السري اختياريين: إيلا خليتيهم خاويين كيتصاوبو بوحدهم.</p>'+`<form id="newForm" class="nf">
     <label for="nName">الاسم</label><input id="nName" maxlength="40" autocomplete="off">
     <label for="nPhone">رقم الواتساب</label><input id="nPhone" inputmode="tel" dir="ltr" placeholder="06 00 00 00 00" autocomplete="off">
     <label for="nUser">اسم الدخول <span class="hint">(حروف لاتينية وأرقام، مثلاً النمرة ولا الاسم. خاوي = tcf التالي)</span></label><input id="nUser" dir="ltr" autocapitalize="off" spellcheck="false" maxlength="30" placeholder="0612345678 / khadija" autocomplete="off">
     <label for="nCode">الرمز السري <span class="hint">(6 حتى 20 حرف ولا رقم. خاوي = رمز أوتوماتيكي)</span></label><input id="nCode" dir="ltr" autocapitalize="characters" spellcheck="false" maxlength="20" autocomplete="off">
     <p class="nferr" id="nErr" role="alert"></p>
-    <button class="btn" type="submit"${adding?' disabled':''}>${adding?'كيتزاد…':'زيد العضو'}</button></form>
-   ${nw}
-   <h3>2 · التبليغات</h3>${recs}
-   <h3>3 · الأعضاء</h3>${cards||'<p class="note">ما كاين حتى عضو باقي.</p>'}
-   <h3>4 · تحديث المحتوى بملف</h3><p class="note">الطريقة العادية هي زر «تعديل الدروس والبرنامج» فوق. هنا غير إيلا عندك ملف كامل: اختار الملف <b dir="ltr">content.json</b> (البرنامج ولائحة الدروس والتمارين والاختبارات).</p>
-   <input type="file" id="fCon" accept=".json,application/json">
-   <h3>5 · استيراد لائحة حسابات</h3><p class="note">ملف <b dir="ltr">accounts-upload.json</b>: كيزيد الناقصين، وكيحفظ الرموز والأرقام ديال اللي كاينين.</p>
-   <input type="file" id="fAcc" accept=".json,application/json">
-   <h3>6 · ملفات الدروس (PDF)</h3><p class="note">اختار الدرس، ومن بعد اختار الملف ديالو. الملف كيتحفظ فـFirebase، وما كيحلّوه غير الأعضاء النشيطين اللي داخلين بحساباتهم. إيلا رفعتي ملف لدرس فيه ملف من قبل، الجديد كياخد بلاصتو. الحد: 8 ميغا.</p>
+    <button class="btn" type="submit"${adding?' disabled':''}>${adding?'كيتزاد…':'زيد العضو'}</button></form>`)}
+   ${adet('recs','2 · التبليغات'+(open?` <span class="num">(${open} مفتوح)</span>`:''),recs)}
+   ${adet('members',`3 · الأعضاء <span class="num">(${list.length})</span>`,cards||'<p class="note">ما كاين حتى عضو باقي.</p>')}
+   ${adet('content','4 · تحديث المحتوى بملف','<p class="note">الطريقة العادية هي زر «تعديل الدروس والبرنامج» فوق. هنا غير إيلا عندك ملف كامل: اختار الملف <b dir="ltr">content.json</b> (البرنامج ولائحة الدروس والتمارين والاختبارات).</p>'+'<input type="file" id="fCon" accept=".json,application/json">')}
+   ${adet('accounts','5 · استيراد لائحة حسابات','<p class="note">ملف <b dir="ltr">accounts-upload.json</b>: كيزيد الناقصين، وكيحفظ الرموز والأرقام ديال اللي كاينين.</p>'+'<input type="file" id="fAcc" accept=".json,application/json">')}
+   ${adet('files','6 · ملفات الدروس (PDF)',`<p class="note">اختار الدرس، ومن بعد اختار الملف ديالو. الملف كيتحفظ فـFirebase، وما كيحلّوه غير الأعضاء النشيطين اللي داخلين بحساباتهم. إيلا رفعتي ملف لدرس فيه ملف من قبل، الجديد كياخد بلاصتو. الحد: 8 ميغا.</p>
    <label for="fLes">الدرس</label><select id="fLes">${lessonList().map(([id,lb])=>`<option value="${id}"${id===lastLes?' selected':''}>${FILES[id]?'✓ ':''}${esc(lb)}</option>`).join('')}</select>
    <input type="file" id="fPdf" accept="application/pdf,.pdf"${upBusy?' disabled':''}>
    <p class="edmsg${upBad?' bad':''}" id="fMsg">${esc(upMsg)}</p>
-   ${Object.keys(FILES).length?Object.keys(FILES).sort().map(id=>{const f=FILES[id];const lb=(lessonList().find(x=>x[0]===id)||[id,id])[1];return `<div class="fl"><b>${esc(lb)}</b><span dir="ltr" class="num">${(f.size/1048576).toFixed(1)} MB</span><button type="button" class="fdel" data-f="${id}">مسح الملف</button></div>`}).join(''):'<p class="note">ما كاين حتى ملف باقي.</p>'}
+   ${Object.keys(FILES).length?Object.keys(FILES).sort().map(id=>{const f=FILES[id];const lb=(lessonList().find(x=>x[0]===id)||[id,id])[1];return `<div class="fl"><b>${esc(lb)}</b><span dir="ltr" class="num">${(f.size/1048576).toFixed(1)} MB</span><button type="button" class="fdel" data-f="${id}">مسح الملف</button></div>`}).join(''):'<p class="note">ما كاين حتى ملف باقي.</p>'}`)}
    <div class="log" id="log">${adminLog.map(esc).join('<br>')}</div>
   </section>`}
 function lessonList(){const out=[],S=SUBJECTS;
   ORDER.forEach(k=>{const s=S[k],nm=L.ar['s_'+k]||k;if(!s)return;
-    if(k==='philo')(s.modules||[]).forEach(m=>(m.concepts||[]).forEach(c=>c[2].forEach((a,i)=>out.push([`philo-${c[0]}-${i+1}`,`${nm} · ${c[1]} · ${Array.isArray(a)?a[0]:a}`]))));
+    if(k==='philo')(s.modules||[]).forEach(m=>(m.concepts||[]).forEach(c=>c[2].forEach((a,i)=>out.push([`philo-${c[0]}-${pk(a,i)}`,`${nm} · ${c[1]} · ${Array.isArray(a)?a[0]:a}`]))));
     else if(k==='hist')(s.sessions||[]).forEach(x=>[...(x.eu||[]),...(x.is||[])].forEach(i=>out.push(['hist-'+i[0],`${nm} · العارضة ${i[0]}: ${i[1]}`])));
     else if(k==='geo')(s.sessions||[]).forEach(x=>(x.items||[]).forEach(i=>out.push(['geo-'+i[0],`${nm} · العارضة ${i[0]}: ${i[1]}`])));
     else (s.groups||[]).forEach(g=>(g.items||[]).forEach(i=>out.push([k+'-'+i[0],`${nm} · ${i[0]}: ${i[1]}`])));
@@ -698,10 +701,19 @@ function edLists(){
   ED.practice.mocks.forEach((x,gi)=>out.push({g:'mock',gt:L.ar.mock,t:x.t||'',mt:gi,a:x.items||(x.items=[]),k:'mock-'+gi}));
   return out;
 }
+// philosophy lessons are matched to their PDFs and progress by a stable key: before adding or deleting, give every lesson its current position as key, so the others keep their ids
+function edNorm(l){l.a.forEach((a,i)=>{if(!Array.isArray(a))l.a[i]=[a,'soon',String(i+1)];else if(a[2]==null||a[2]==='')l.a[i]=[a[0],a[1]||'soon',String(i+1)]})}
+// numbering: lessons are kept in numeric order inside their list (1, 1.1, 2, 10.1, 10.2...), so a new number takes its place by itself
+function numCmp(a,b){const A=String(a||'').trim().split('.').map(p=>/^\d+$/.test(p)?+p:NaN),B=String(b||'').trim().split('.').map(p=>/^\d+$/.test(p)?+p:NaN);
+  for(let i=0;i<Math.max(A.length,B.length);i++){const x=A[i],y=B[i];if(x===undefined)return -1;if(y===undefined)return 1;if(isNaN(x)||isNaN(y))return String(a).localeCompare(String(b));if(x!==y)return x-y}return 0}
+function edSortList(l){if(!l||l.ax||l.mt!==undefined||!Array.isArray(l.a))return;l.a.sort((x,y)=>numCmp(x[0],y[0]))}
+function edPlace(el){const li=+el.dataset.l,ri=+el.dataset.r,l=edLists()[li];if(!l||l.ax||!l.a[ri])return;const it=l.a[ri];if(!String(it[0]||'').trim())return;
+  const before=l.a.slice();edSortList(l);if(l.a.every((x,i)=>x===before[i]))return;
+  edDirty=true;render();const r2=l.a.indexOf(it),t=document.querySelector(`.et[data-l="${li}"][data-r="${r2}"]`);if(t){t.focus();t.scrollIntoView({block:'center'})}}
 function edRow(li,ri,it,ax,mk){
   const title=ax?(Array.isArray(it)?it[0]:it):it[1], st=(ax?(Array.isArray(it)?it[1]:'soon'):it[2])==='ready'?'ready':'soon', n=ax?String(ri+1):it[0];
   const d=`data-l="${li}" data-r="${ri}"`;
-  return `<div class="er"><input class="en" ${d} data-f="n" value="${esc(n)}" dir="ltr" inputmode="numeric" aria-label="الرقم"${ax||mk?' disabled':''}><input class="et" ${d} data-f="t" value="${esc(title)}" dir="auto" aria-label="العنوان" placeholder="${mk?'مثلاً: الدورة العادية 2016':'عنوان الدرس'}"><button type="button" class="es ${st}" ${d} data-act="st">${STL[st]}</button>${ax?'':`<button type="button" class="edel" ${d} data-act="del">مسح</button>`}</div>`}
+  return `<div class="er"><input class="en" ${d} data-f="n" value="${esc(n)}" dir="ltr" inputmode="numeric" aria-label="الرقم"${ax||mk?' disabled':''}><input class="et" ${d} data-f="t" value="${esc(title)}" dir="auto" aria-label="العنوان" placeholder="${mk?'مثلاً: الدورة العادية 2016':'عنوان الدرس'}"><button type="button" class="es ${st}" ${d} data-act="st">${STL[st]}</button><button type="button" class="edel" ${d} data-act="del">مسح</button></div>`}
 function edit(){
   if(!ED){ED=clone(CONTENT||{});edDirty=false}
   if(!ED.week)ED.week={label:'',items:[],note:''};
@@ -715,7 +727,7 @@ function edit(){
     <label for="wNote">ملاحظة</label><textarea id="wNote" rows="3" data-w="note" dir="auto">${esc(w.note||'')}</textarea>`);
   const body=groups.map(gr=>det(gr.g,gr.gt,gr.ls.map(([l,li])=>{
       const head=l.mt!==undefined?`<h4>مجموعة اختبارات</h4><div class="er"><input class="et" data-mt="${l.mt}" value="${esc(l.t)}" placeholder="مثلاً: الامتحان الوطني 2025" dir="auto">${l.a.length?'':`<button type="button" class="edel" data-act="mdel" data-mt="${l.mt}">مسح</button>`}</div>`:`<h4>${esc(l.t)}</h4>`;
-      return head+(l.mt!==undefined?'<p class="note">كتب فكل اختبار السنة والدورة (العادية ولا الاستدراكية). الموقع كيرتبهم بوحدو من الأقدم للأحدث ملي تحفظ.</p>':'')+l.a.map((it,ri)=>edRow(li,ri,it,l.ax,l.mt!==undefined)).join('')+(l.ax?'':`<button type="button" class="eadd" data-act="add" data-l="${li}">زيد</button>`)}).join('')
+      return head+(l.mt!==undefined?'<p class="note">كتب فكل اختبار السنة والدورة (العادية ولا الاستدراكية). الموقع كيرتبهم بوحدو من الأقدم للأحدث ملي تحفظ.</p>':'')+l.a.map((it,ri)=>edRow(li,ri,it,l.ax,l.mt!==undefined)).join('')+(l.mt!==undefined?'':`<button type="button" class="eadd" data-act="add" data-l="${li}">زيد</button>`)}).join('')
     +(gr.g==='mock'?`<h4>جديد</h4><button type="button" class="eadd" data-act="madd">زيد مجموعة اختبارات</button>`:''))).join('');
   const mockGroup=groups.some(x=>x.g==='mock')?'':det('mock',L.ar.mock,`<p class="note">${L.ar.empty}</p><button type="button" class="eadd" data-act="madd">زيد مجموعة اختبارات</button>`);
   return `<div class="view-top"><button class="back" type="button" data-go="admin">الرجوع للإدارة</button></div>
@@ -743,6 +755,7 @@ function edCheck(){const errs=[],seen={};
 async function edSave(){
   const errs=edCheck();
   if(errs.length){edMsg='ما تحفظش: '+errs[0]+(errs.length>1?' (و'+(errs.length-1)+' أخرين)':'');edBad=true;render();return}
+  edLists().forEach(edSortList);
   edSaving=true;edMsg='';render();
   try{const j=clone(ED);sortMocks(j.practice);await setDoc(doc(db,'content','main'),{json:JSON.stringify(j),updated:serverTimestamp()});applyContent(j);ED=clone(j);
     edDirty=false;edBad=false;edMsg='✓ تحفظ. الطلبة غادي يشوفو التبديل ملي يحلّو الموقع.'}
@@ -757,11 +770,12 @@ function edAct(b){const a=b.dataset.act;
   if(a==='mdel'){ED.practice.mocks.splice(+b.dataset.mt,1);edDirty=true;render();return}
   const ls=edLists(),li=+b.dataset.l,l=ls[li];if(!l)return;
   if(a==='st'){const ri=+b.dataset.r,it=l.a[ri];let ns;
-    if(l.ax){const t0=Array.isArray(it)?it[0]:it,s0=Array.isArray(it)?it[1]:'soon';ns=s0==='ready'?'soon':'ready';l.a[ri]=[t0,ns]}
+    if(l.ax){const t0=Array.isArray(it)?it[0]:it,s0=Array.isArray(it)?it[1]:'soon',k0=Array.isArray(it)?it[2]:null;ns=s0==='ready'?'soon':'ready';l.a[ri]=k0!=null&&k0!==''?[t0,ns,k0]:[t0,ns]}
     else{ns=it[2]==='ready'?'soon':'ready';it[2]=ns}
     b.className='es '+ns;b.textContent=STL[ns];edMark();return}
-  if(a==='del'){const ri=+b.dataset.r,it=l.a[ri];if(!confirm('تمسح «'+((it[1]||'').trim()||'سطر خاوي')+'»؟'))return;l.a.splice(ri,1);edDirty=true;render();return}
-  if(a==='add'){const nums=ls.filter(x=>x.k===l.k).flatMap(x=>x.a.map(i=>parseInt(i[0],10)||0));l.a.push([String(Math.max(0,...nums)+1),'','soon']);edDirty=true;render();const ins=document.querySelectorAll(`.et[data-l="${li}"]`);ins[ins.length-1]?.focus();return}
+  if(a==='del'){const ri=+b.dataset.r,it=l.a[ri],tt=l.ax?(Array.isArray(it)?it[0]:it):it[1];if(!confirm('تمسح «'+(String(tt||'').trim()||'سطر خاوي')+'»؟'))return;if(l.ax)edNorm(l);l.a.splice(ri,1);edDirty=true;render();return}
+  if(a==='add'&&l.ax){edNorm(l);const mx=Math.max(0,...l.a.map(x=>parseInt(x[2],10)||0));l.a.push(['','soon',String(mx+1)]);edDirty=true;render();const ins=document.querySelectorAll(`.et[data-l="${li}"]`);ins[ins.length-1]?.focus();return}
+  if(a==='add'){const nums=ls.filter(x=>x.k===l.k).flatMap(x=>x.a.map(i=>parseInt(i[0],10)||0));l.a.push([String(Math.max(0,...nums)+1),'','soon']);edDirty=true;render();const ins=document.querySelectorAll(`.en[data-l="${li}"]`),last=ins[ins.length-1];if(last){last.focus();last.select();last.scrollIntoView({block:'center'})}return}
 }
 
 // ---------- attendance (member: session code) ----------
@@ -1039,6 +1053,7 @@ app.addEventListener('toggle',e=>{const d=e.target;if(d.tagName==='DETAILS'&&d.d
 app.addEventListener('input',e=>{const d=e.target.dataset;if(!qDraft||d.qi===undefined)return;
   if(d.qf==='t')qDraft.q[+d.qi].t=e.target.value;else if(d.qo!==undefined)qDraft.q[+d.qi].o[+d.qo]=e.target.value});
 app.addEventListener('change',e=>{const d=e.target.dataset;
+  if(ED&&d.f==='n'&&(location.hash||'').slice(1)==='edit'){edPlace(e.target);return}
   if(qDraft&&d.qa!==undefined){qDraft.ans[+d.qi]=+d.qa;return}
   if(d.mq!==undefined){(qzSel[d.mq]=qzSel[d.mq]||[])[+d.mi]=+e.target.value}});
 window.addEventListener('beforeunload',e=>{if(edDirty){e.preventDefault();e.returnValue=''}});
